@@ -12,6 +12,8 @@
  any redistribution
 *********************************************************************/
 
+
+//code slightly modified from adafruit demo code for initial testing of hardware
 #include <Arduino.h>
 #include <SPI.h>
 #include "Adafruit_BLE.h"
