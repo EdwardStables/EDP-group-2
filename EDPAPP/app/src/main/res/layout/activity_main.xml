@@ -11,7 +11,7 @@
         android:id="@+id/connnectButtonLeft"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="16dp"
+        android:layout_marginLeft="24dp"
         android:layout_marginTop="16dp"
         android:text="Connect"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -34,7 +34,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Flash Left"
+        android:text="Test Left"
         android:enabled="false"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -46,46 +46,16 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:enabled="false"
-        android:text="Flash Right"
+        android:text="Test Right"
         app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/flashButtonLeft" />
 
-    <TextView
-        android:id="@+id/LeftButton"
-        android:layout_width="wrap_content"
-        android:layout_height="16dp"
-        android:text="Left Button Not Pressed"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="191dp" />
-
-    <TextView
-        android:id="@+id/RightButton"
-        android:layout_width="wrap_content"
+    <ListView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="Right Button Not Pressed"
-        app:layout_constraintBottom_toTopOf="@+id/LeftButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/flashButtonRight" />
+        android:id="@+id/listoflocations"
+        app:layout_constraintTop_toBottomOf="@id/flashButtonRight"/>
 
-    <Button
-        android:id="@+id/Disconnectbtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:text="disconnect"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/flashButtonRight"
-        tools:layout_editor_absoluteY="46dp" />
 </android.support.constraint.ConstraintLayout>

@@ -10,6 +10,7 @@ This is developed based off the Nordic example app for UART TX/RX bluetooth comm
 
 package ed.edpapp;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -19,21 +20,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements RadioGroup.OnCheckedChangeListener {
 
@@ -45,12 +53,17 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     private static final int UART_PROFILE_DISCONNECTED = 21;
     private static final int STATE_OFF = 10;
 
+    Location locationer;
+    LocationManager locationManager;
     private int mState = UART_PROFILE_DISCONNECTED;
     private ed.edpapp.UartService mService = null;
     private BluetoothDevice mDevice = null;
     private BluetoothAdapter mBtAdaptor = null;
     private Button btnConnectDisconnectLeft, btnConnectDisconnectRight, btnFlashL, btnFlashR, btnDisconnect;
-    private TextView leftButtonPressed, rightButtonPressed;
+    private ListView list;
+    ArrayList<listItem> loclist = new ArrayList<>();
+    ArrayAdapter<String> adapter;
+
 
     boolean triedLeft = false;
     boolean triedRight = false;
@@ -59,7 +72,33 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        locationer = new Location();
         mBtAdaptor = BluetoothAdapter.getDefaultAdapter();
+
+
+        list = (ListView) findViewById(R.id.listoflocations);
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getLocationNames());
+        list.setAdapter(adapter);
+
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String currentLat = "";
+                String currentLong = " ";
+                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                    currentLat = Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLatitude());
+                    currentLong = Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLongitude());
+                }
+                locationer.pollLocation(loclist.get(i).LocationLat, loclist.get(i).LocationLong, currentLat, currentLong, getApplicationContext());
+            }
+        });
+
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        }
 
         if(mBtAdaptor == null){
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG);
@@ -68,11 +107,8 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
         btnConnectDisconnectLeft = (Button) findViewById(R.id.connnectButtonLeft);
         btnConnectDisconnectRight = (Button) findViewById(R.id.connnectButtonRight);
-        btnDisconnect = (Button) findViewById(R.id.Disconnectbtn);
         btnFlashR = (Button) findViewById(R.id.flashButtonRight);
         btnFlashL = (Button) findViewById(R.id.flashButtonLeft);
-        leftButtonPressed = (TextView) findViewById(R.id.LeftButton);
-        rightButtonPressed = (TextView) findViewById(R.id.RightButton);
 
 
         service_init();
@@ -96,18 +132,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                 }
             }
         });
-        btnDisconnect.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                mService.disconnect();
-                btnConnectDisconnectLeft.setEnabled(true);
-                btnConnectDisconnectRight.setEnabled(true);
-                triedLeft = false;
-                triedRight = false;
-               // btnFlashL.setEnabled(false);
-                //btnFlashR.setEnabled(false);
-            }
-        });
+
 
         btnConnectDisconnectRight.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -153,6 +178,41 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                 }
             }
         });
+
+        populateDestinations();
+    }
+
+    public void buzz(boolean left){
+        try{
+            String command;
+            if(left){
+                command = "Flash:";
+            }else{
+                command = "FlashR";
+            }
+            byte[] value = command.getBytes("UTF-8");
+            mService.writeRXCharacteristic(value);
+
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addlocation(listItem newItem){
+        loclist.add(newItem);
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getLocationNames());
+        list.setAdapter(adapter);
+    }
+
+    private void populateDestinations(){
+        listItem localoca = new listItem("Royal Albert Hall", "51.500523", "-0.177341");
+        listItem localoca1 = new listItem("Imperial College London", "51.499332", "-0.174527");
+        listItem localoca2 = new listItem("Buckingham Palace", "51.501912", "-0.141657");
+
+        addlocation(localoca);
+        addlocation(localoca1);
+        addlocation(localoca2);
+
     }
 
     private void service_init() {
@@ -224,10 +284,10 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                    String text = new String(txValue, "UTF-8");
 
                    if(text == "Button"){
-                        leftButtonPressed.setText("Left Button is pressed");
+                       // leftButtonPressed.setText("Left Button is pressed");
                    }
                    if(text == "noButton"){
-                       leftButtonPressed.setText("Left Button is not pressed");
+                       //leftButtonPressed.setText("Left Button is not pressed");
                    }
                } catch (UnsupportedEncodingException e) {
                    Log.e(TAG, e.toString());
@@ -282,6 +342,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     private void showMessage(String s) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
+
     private Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg){
@@ -298,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
 
         super.onDestroy();
         Log.d(TAG, "onDestroy()");
-
+        locationManager.removeUpdates(locationListener);
         try{
             LocalBroadcastManager.getInstance(this).unregisterReceiver(UARTStatusChangeReceiver);
         }catch (Exception ignore){
@@ -309,6 +370,27 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         mService = null;
     }
 
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(android.location.Location location) {
+            locationer.updateLatLong(location);
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+
+        }
+    };
     public void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
@@ -329,10 +411,17 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         Log.d(TAG, "onResume");
     }
 
-    public void onCheckedChanged(RadioGroup group, int checkedId){
-
+    private String[] getLocationNames(){
+        String[] locations = new String[loclist.size()];
+        for(int i = 0; i<loclist.size(); i++){
+            listItem temp = (listItem) loclist.get(i);
+            locations[i] = temp.Location;
+        }
+        return locations;
     }
-    public void onBackPressed(){
+
+    @Override
+    public void onCheckedChanged(RadioGroup radioGroup, int i) {
 
     }
 }
