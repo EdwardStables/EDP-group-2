@@ -66,19 +66,50 @@ public class Navigator {
         return bearing;
     }
 
-    public boolean navigate(Double currentLat, Double currentLong, stepItem nextStep){
+    public boolean navigate(Double currentLat, Double currentLong, stepItem nextStep) {
         double doubleLat = Double.parseDouble(nextStep.getLat());
         double doubleLong = Double.parseDouble(nextStep.getLong());
-        Log.i(TAG, doubleLat*1.001 + "\n"  +doubleLat * 0.999);
+        Log.i(TAG, doubleLat * 1.001 + "\n" + doubleLat * 0.999);
 
-        Log.i(TAG, doubleLong*1.001 + "\n"  +doubleLong * 0.999);
+        Log.i(TAG, doubleLong * 1.001 + "\n" + doubleLong * 0.999);
+        if (doubleLat < 0) {
+            if (doubleLong < 0) {
+                if (doubleLong < 0) {
+                    if ((currentLat > doubleLat * 1.001 && currentLat < doubleLat * 0.999) &&
+                            (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
 
-        if((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
-                (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)){
+                } else {
+                    if ((currentLat > doubleLat * 1.001 && currentLat < doubleLat * 0.999) &&
+                            (currentLong < doubleLong * 1.001 && currentLong > doubleLong * 0.999)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
 
-            return true;
-        }else{
-            return false;
+                }
+            } else {
+                if (doubleLong < 0) {
+                    if ((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
+                            (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    if ((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
+                            (currentLong < doubleLong * 1.001 && currentLong > doubleLong * 0.999)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
         }
+        return false;
     }
 }
