@@ -15,4 +15,7 @@ public class listItem {
         this.LocationLong = LocationLong;
 
     }
+    public String getLat(){ return LocationLat; }
+    public String getLong(){ return LocationLong; }
+    public String getLoc(){ return Location; }
 }

@@ -38,6 +38,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.UnsupportedEncodingException;
@@ -53,17 +54,24 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     private static final int UART_PROFILE_DISCONNECTED = 21;
     private static final int STATE_OFF = 10;
 
-    Location locationer;
-    LocationManager locationManager;
     private int mState = UART_PROFILE_DISCONNECTED;
     private ed.edpapp.UartService mService = null;
     private BluetoothDevice mDevice = null;
     private BluetoothAdapter mBtAdaptor = null;
-    private Button btnConnectDisconnectLeft, btnConnectDisconnectRight, btnFlashL, btnFlashR, btnDisconnect;
+    private Button bluetoothBtn, buzzBtn;
     private ListView list;
+    private listItem chosenItem;
     ArrayList<listItem> loclist = new ArrayList<>();
     ArrayAdapter<String> adapter;
 
+    TextView currentLocation;
+    TextView nextLocation;
+    Button startBtn, buzzer;
+    LocationManager locationManager;
+    String LAT;
+    String LNG;
+    String LOC;
+    Location locationer = new Location();
 
     boolean triedLeft = false;
     boolean triedRight = false;
@@ -73,112 +81,54 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        locationer = new Location();
+        currentLocation = (TextView) findViewById(R.id.currentlocdisp);
+        nextLocation = (TextView) findViewById(R.id.nextlocdisp);
+        bluetoothBtn = (Button) findViewById(R.id.BluetoothButton);
         mBtAdaptor = BluetoothAdapter.getDefaultAdapter();
-
-
-        list = (ListView) findViewById(R.id.listoflocations);
+        buzzBtn = (Button) findViewById(R.id.buzzer);
+        list = (ListView) findViewById(R.id.locationlist);
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getLocationNames());
         list.setAdapter(adapter);
 
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String currentLat = "";
-                String currentLong = " ";
-                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-                    currentLat = Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLatitude());
-                    currentLong = Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLongitude());
-                }
-                locationer.pollLocation(loclist.get(i).LocationLat, loclist.get(i).LocationLong, currentLat, currentLong, getApplicationContext());
+                Start(i);
             }
         });
-
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         }
+        bluetoothBtn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                if(!mBtAdaptor.isEnabled()){
+                    Log.i(TAG, "onClick = BT not enabled yet");
+                    Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivityForResult(intent, REQUEST_ENABLE_BT);
+                }else{
+                    Intent intent = new Intent(MainActivity.this, DeviceListActivity.class);
+                    startActivityForResult(intent, REQUEST_SELECT_DEVICE);
+                }
+            }
+        });
+
+        buzzBtn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                buzz(true);
+            }
+        });
 
         if(mBtAdaptor == null){
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG);
             finish();
             return;
         }
-        btnConnectDisconnectLeft = (Button) findViewById(R.id.connnectButtonLeft);
-        btnConnectDisconnectRight = (Button) findViewById(R.id.connnectButtonRight);
-        btnFlashR = (Button) findViewById(R.id.flashButtonRight);
-        btnFlashL = (Button) findViewById(R.id.flashButtonLeft);
-
-
         service_init();
-
-
-
-        btnConnectDisconnectLeft.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                if(!mBtAdaptor.isEnabled()){
-                    Log.i(TAG, "onClick - BT not enabled yet");
-                    Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-                }
-                else{
-                    if(btnConnectDisconnectLeft.isEnabled()){
-                        Intent newIntent = new Intent(MainActivity.this, ed.edpapp.DeviceListActivity.class);
-                        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
-                        triedLeft = true;
-                    }
-                }
-            }
-        });
-
-
-        btnConnectDisconnectRight.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                if(!mBtAdaptor.isEnabled()){
-                    Log.i(TAG, "onClick - BT not enabled yet");
-                    Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-                }
-                else{
-                    if(btnConnectDisconnectRight.isEnabled()) {
-                        Intent newIntent = new Intent(MainActivity.this, ed.edpapp.DeviceListActivity.class);
-                        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
-                        triedRight = true;
-                    }
-                }
-            }
-        });
-
-        btnFlashL.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                try{
-                    String command = "FlashL";
-                    byte[] value = command.getBytes("UTF-8");
-                    mService.writeRXCharacteristic(value);
-
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        btnFlashR.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                try{
-                    String command = "FlashR";
-                    byte[] value = command.getBytes("UTF-8");
-                    mService.writeRXCharacteristic(value);
-
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
         populateDestinations();
     }
 
@@ -186,12 +136,17 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         try{
             String command;
             if(left){
-                command = "Flash:";
+                command = "FlashL";
             }else{
                 command = "FlashR";
             }
             byte[] value = command.getBytes("UTF-8");
-            mService.writeRXCharacteristic(value);
+            try{
+
+                mService.writeRXCharacteristic(value);
+            }catch(Exception e){
+                Log.i(TAG, "No Bluetooth Device");
+            }
 
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -251,12 +206,10 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                     public void run() {
                         Log.i(TAG, "UART_CONNECT_MSG");
                         if(triedLeft){
-                            btnFlashL.setEnabled(true);
-                            btnConnectDisconnectLeft.setEnabled(false);
+
                         }
                         if(triedRight){
-                            btnFlashR.setEnabled(true);
-                            btnConnectDisconnectRight.setEnabled(false);
+
                         }
                         mState = UART_PROFILE_CONNECTED;
                     }
@@ -267,8 +220,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                    @Override
                    public void run() {
                        Log.d(TAG, "UART_DISCONNECT_MSG");
-                       btnFlashL.setEnabled(false);
-                       btnFlashR.setEnabled(false);
+
                        mState = UART_PROFILE_DISCONNECTED;
                        mService.close();
                    }
@@ -283,11 +235,11 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                try{
                    String text = new String(txValue, "UTF-8");
 
-                   if(text == "Button"){
-                       // leftButtonPressed.setText("Left Button is pressed");
+                   if(text == "LButton"){
+                       compassmode();
                    }
-                   if(text == "noButton"){
-                       //leftButtonPressed.setText("Left Button is not pressed");
+                   if(text == "RButton"){
+
                    }
                } catch (UnsupportedEncodingException e) {
                    Log.e(TAG, e.toString());
@@ -301,6 +253,9 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
        }
    };
 
+    void compassmode(){
+
+    }
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(UartService.ACTION_GATT_CONNECTED);
@@ -322,6 +277,8 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
 
                    Log.d(TAG, "... onActivityResultdevice.address==" + mDevice + "mserviceValue" + mService);
                    mService.connect(deviceAddress);
+               }else{
+                   Log.d(TAG, "pressing the thing didn't work");
                }
                break;
 
@@ -359,7 +316,6 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
 
         super.onDestroy();
         Log.d(TAG, "onDestroy()");
-        locationManager.removeUpdates(locationListener);
         try{
             LocalBroadcastManager.getInstance(this).unregisterReceiver(UARTStatusChangeReceiver);
         }catch (Exception ignore){
@@ -370,27 +326,11 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         mService = null;
     }
 
-    LocationListener locationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(android.location.Location location) {
-            locationer.updateLatLong(location);
-        }
 
-        @Override
-        public void onStatusChanged(String s, int i, Bundle bundle) {
 
-        }
-
-        @Override
-        public void onProviderEnabled(String s) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String s) {
-
-        }
-    };
+    public void setNextLoc(String loc){
+        //nextLoc.setText(loc);
+    }
     public void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
@@ -419,6 +359,49 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
         return locations;
     }
+    void Start(int i){
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationer.pollLocation(loclist.get(i).getLat(), loclist.get(i).getLong(), Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLatitude()),
+                    Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLongitude()), MainActivity.this);
+            displayCurrent(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER));
+        }
+    }
+
+
+    public void displayCurrent(android.location.Location location){
+        currentLocation.setText(location.getLatitude() + ", " + location.getLongitude());
+    }
+    public void displayNext(stepItem location){
+        nextLocation.setText(location.getLat() + ", " + location.getLong());
+    }
+
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(android.location.Location location) {
+            displayCurrent(location);
+            if(locationer.isAtLocation(location)){
+                Log.i(TAG, "Is At Location");
+                buzz(locationer.goLeft());
+            }
+            displayNext(locationer.nextLocation());
+
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+
+        }
+    };
 
     @Override
     public void onCheckedChanged(RadioGroup radioGroup, int i) {

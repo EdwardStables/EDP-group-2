@@ -2,7 +2,6 @@ package ed.edpapp;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -20,17 +19,21 @@ import java.util.ArrayList;
  * Created by Edward Stables on 12/03/2018.
  */
 
-public class Location extends MainActivity {
+public class Location {
     private final String TAG = "mapActivity";
     private static String ENDPOINT;
     private RequestQueue requestQueue;
-    private TextView direction;
     ArrayList<stepItem> stepLocs;
 
-    protected void pollLocation(String latitude, String longitude, String currentLat, String currentLong, Context context) {
+    Navigator navigator = new Navigator();
+
+    protected void pollLocation(String latitude, String longitude, String currentLat,
+                                String currentLong, Context context) {
         Log.i(TAG, latitude);
         Log.i(TAG, longitude);
-        ENDPOINT ="https://maps.googleapis.com/maps/api/directions/json?origin="+ currentLat+ "," +currentLong+"&destination="+latitude+","+longitude+"&mode=walking&key=AIzaSyDIWmHtaqq6ByMYEQoJsfJIgAnEXZFfHEA";
+        ENDPOINT ="https://maps.googleapis.com/maps/api/directions/json?origin="+
+                currentLat+ "," +currentLong+"&destination="+latitude+","+longitude+
+                "&mode=walking&key=AIzaSyDIWmHtaqq6ByMYEQoJsfJIgAnEXZFfHEA";
         Log.i(TAG, ENDPOINT);
         requestQueue = Volley.newRequestQueue(context);
 
@@ -95,65 +98,70 @@ public class Location extends MainActivity {
             tempLoc = new stepItem(tempLat, tempLong);
             stepLocs.add(tempLoc);
         }
-        Navigator navigator = new Navigator();
+        stepLocs.get(0).setcheckActive(true);
         navigator.setBearings(stepLocs);
         putstepson(stepLocs);
     }
 
+
     public void putstepson(ArrayList<stepItem> steplocs){
-        for(int i =0; i < steplocs.size()-1; i++){
-            if(steplocs.get(i).getleft()){
-                Log.i(TAG, "left");
-            }else{
-                Log.i(TAG, "right");
-            }
-
-        }
-    }
-
-
-
-    void updateLatLong(android.location.Location location){
-        stepItem currentStep = getStep();
-        if(currentStep == null){
-            finished();
-        }
-        Navigator navigator = new Navigator();
-        if(navigator.navigate(location.getLatitude(), location.getLongitude(), currentStep)){
-            boolean left = nextStep();
-            buzz(left);
-        }
-
-    }
-
-    stepItem getStep(){
-        for(stepItem item : stepLocs){
-            if(item.getcheckActive()){
-                return item;
+        String displayString = "";
+        for(int i =0; i < steplocs.size()-1; i++) {
+            if (steplocs.get(i).getleft()) {
+                displayString = displayString + "Left   " + steplocs.get(i).getLat() + ", " + steplocs.get(i).getLong() + "\n";
+            } else {
+                displayString = displayString + "Right   " + steplocs.get(i).getLat() + ", " + steplocs.get(i).getLong() + "\n";
             }
         }
-        return null;
+        Log.i(TAG, displayString);
+    }
+    public boolean goLeft(){
+        return lastLocation().getleft();
     }
 
-    boolean nextStep(){//moves the active node onto the next one in the list. Returns whether to turn left or right.
-        boolean set = false;
-        int i = 0;
-        boolean left = false;
-        while(set == false){
-            if(stepLocs.get(i).getcheckActive() == true){
-                set = true;
+    public boolean isAtLocation(android.location.Location location){
+        if(navigator.navigate(location.getLatitude(), location.getLongitude(), nextLocation())){
+            stepStep();
+            return true;
+        }
+        return false;
+    }
+
+    public void stepStep(){
+        for(int i = 0; i < stepLocs.size()-1; i++){
+            if(stepLocs.get(i).checkActive){
                 stepLocs.get(i).setcheckActive(false);
-                left = stepLocs.get(i).getleft();
+                stepLocs.get(i+1).setcheckActive(true);
+                break;
             }
-            i++;
         }
-        stepLocs.get(i).setcheckActive(true);
-        return left;
+    }
+    public stepItem lastLocation(){
+        stepItem tempItem = stepLocs.get(0);
+        for(int i = 1; i < stepLocs.size(); i++){
+            if(stepLocs.get(i).checkActive){
+                break;
+            }else{
+                tempItem = stepLocs.get(i);
+            }
+        }
+        return tempItem;
     }
 
-    void finished(){
-        Log.i(TAG, "You have reached your destination.");
+    public stepItem nextLocation(){
+        stepItem tempItem = null;
+        if(stepLocs != null){
+            for(int i = 0; i < stepLocs.size(); i++){
+                if(stepLocs.get(i).checkActive){
+                    tempItem = stepLocs.get(i);
+                    break;
+                }
+            }
+        }
+
+        return tempItem;
     }
+
 
 
 }

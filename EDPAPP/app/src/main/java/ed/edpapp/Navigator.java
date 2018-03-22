@@ -1,5 +1,7 @@
 package ed.edpapp;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 import static java.lang.Math.atan2;
@@ -12,6 +14,7 @@ import static java.lang.Math.toDegrees;
  */
 
 public class Navigator {
+    public final String TAG = "Navigator";
     public void setBearings(ArrayList<stepItem> steps){
 
         for(int i = 0; i < steps.size()-1;i++){
@@ -36,15 +39,15 @@ public class Navigator {
 
             if(theta <= 180){
                 if(alpha <= boundary && alpha > theta){
-                    steps.get(i).setleft(false);
+                    steps.get(i+1).setleft(false);
                 }else{
-                    steps.get(i).setleft(true);
+                    steps.get(i+1).setleft(true);
                 }
             }else{
                 if(alpha <= theta && alpha > boundary){
-                    steps.get(i).setleft(true);
+                    steps.get(i+1).setleft(true);
                 }else{
-                    steps.get(i).setleft(false);
+                    steps.get(i+1).setleft(false);
                 }
             }
         }
@@ -66,7 +69,13 @@ public class Navigator {
     public boolean navigate(Double currentLat, Double currentLong, stepItem nextStep){
         double doubleLat = Double.parseDouble(nextStep.getLat());
         double doubleLong = Double.parseDouble(nextStep.getLong());
-        if((currentLat < doubleLat * 1.0001 && currentLat > doubleLat * 0.9999) && (currentLong < doubleLong * 1.0001 && currentLong > doubleLong * 0.9999)){
+        Log.i(TAG, doubleLat*1.001 + "\n"  +doubleLat * 0.999);
+
+        Log.i(TAG, doubleLong*1.001 + "\n"  +doubleLong * 0.999);
+
+        if((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
+                (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)){
+
             return true;
         }else{
             return false;
