@@ -1,7 +1,5 @@
 package ed.edpapp;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 
 import static java.lang.Math.atan2;
@@ -15,6 +13,8 @@ import static java.lang.Math.toDegrees;
 
 public class Navigator {
     public final String TAG = "Navigator";
+
+    //Calculates the bearing between each waypoint and saves it
     public void setBearings(ArrayList<stepItem> steps){
 
         for(int i = 0; i < steps.size()-1;i++){
@@ -30,6 +30,8 @@ public class Navigator {
 
     }
 
+
+    //Calculates whether a left or right turn is required at each waypoint and saves it
     public void setLR(ArrayList<stepItem> steps){
 
         for(int i = 0; i < steps.size()-1; i++){
@@ -53,6 +55,7 @@ public class Navigator {
         }
     }
 
+    //a utility method that makes sure all bearings are 0<=theta<=360
     public double normBearing(double bearing){
 
         while (bearing > 360 || bearing < 0){
@@ -66,50 +69,16 @@ public class Navigator {
         return bearing;
     }
 
+    //Calculates whether the user is within roughly 10 meters of the passed waypoints
     public boolean navigate(Double currentLat, Double currentLong, stepItem nextStep) {
         double doubleLat = Double.parseDouble(nextStep.getLat());
         double doubleLong = Double.parseDouble(nextStep.getLong());
-        Log.i(TAG, doubleLat * 1.001 + "\n" + doubleLat * 0.999);
 
-        Log.i(TAG, doubleLong * 1.001 + "\n" + doubleLong * 0.999);
-        if (doubleLat < 0) {
-            if (doubleLong < 0) {
-                if (doubleLong < 0) {
-                    if ((currentLat > doubleLat * 1.001 && currentLat < doubleLat * 0.999) &&
-                            (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-
-                } else {
-                    if ((currentLat > doubleLat * 1.001 && currentLat < doubleLat * 0.999) &&
-                            (currentLong < doubleLong * 1.001 && currentLong > doubleLong * 0.999)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-
-                }
-            } else {
-                if (doubleLong < 0) {
-                    if ((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
-                            (currentLong > doubleLong * 1.001 && currentLong < doubleLong * 0.999)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    if ((currentLat < doubleLat * 1.001 && currentLat > doubleLat * 0.999) &&
-                            (currentLong < doubleLong * 1.001 && currentLong > doubleLong * 0.999)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            }
-
+        if ((currentLat < doubleLat + 0.0001 && currentLat > doubleLat - 0.0001) &&
+                (currentLong < doubleLong + 0.0001 && currentLong > doubleLong - 0.0001)) {
+            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 }

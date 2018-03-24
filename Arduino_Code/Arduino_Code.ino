@@ -1,4 +1,4 @@
-  /////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
 //Developed for GPS location for the blind project for group 2 EDP.
 //
 //Adafruit example code for Rx/Tx BLE communication was very helpful in creating this. 
@@ -25,6 +25,7 @@ void setup(void)
 {
   Serial.begin(115200);
   Serial.println(F("Serial Started..."));
+  pinMode(6, INPUT);
   pinMode(5, INPUT);
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
@@ -67,12 +68,18 @@ void loop(void)
   char inputs[BUFSIZE+1];
   if(digitalRead(6)==HIGH){
     ble.print("AT+BLEUARTTX=");
-    ble.println("button pressed\n");
+    ble.println("LButton");
     if(!ble.waitForOK()){
       Serial.println(F("Failed to send"));
     }
   }
-
+  if(digitalRead(5)==HIGH){
+    ble.print("AT+BLEUARTTX=");
+    ble.println("RButton");
+    if(!ble.waitForOK()){
+      Serial.println(F("Failed to send"));
+    }
+  }
   // Check for incoming characters from Bluefruit
   ble.println("AT+BLEUARTRX");
   ble.readline();
@@ -90,28 +97,9 @@ void loop(void)
     delay(1000);
     digitalWrite(3, LOW);
   }
-
-  if(digitalRead(5)){
-    ble.write("LButton");
-    Serial.println("LButton");
-    delay(1000);
-    ble.write("noLButton");
-  }
-
-  if(digitalRead(6)){
-    ble.write("RButton");
-    delay(1000);
-    ble.write("noRButton");
-    
-  }
-  
   if(temp == "FlashR"){
-    digitalWrite(3, HIGH);
-    delay(400);
-    digitalWrite(3, LOW);
-    delay(200);
-    digitalWrite(3, HIGH);
-    delay(400);
-    digitalWrite(3, LOW);
+    digitalWrite(2, HIGH);
+    delay(1000);
+    digitalWrite(2, LOW);
   }
 }

@@ -27,26 +27,25 @@ public class Location {
 
     Navigator navigator = new Navigator();
 
+    //Creates the request and gets the returned value from the directiosn API
     protected void pollLocation(String latitude, String longitude, String currentLat,
                                 String currentLong, Context context) {
         Log.i(TAG, latitude);
         Log.i(TAG, longitude);
         ENDPOINT ="https://maps.googleapis.com/maps/api/directions/json?origin="+
                 currentLat+ "," +currentLong+"&destination="+latitude+","+longitude+
-                "&mode=walking&key=AIzaSyDIWmHtaqq6ByMYEQoJsfJIgAnEXZFfHEA";
+                "&mode=walking&key=[INSERT YOUR KEY HERE]";
         Log.i(TAG, ENDPOINT);
+
         requestQueue = Volley.newRequestQueue(context);
-
-        fetchPosts();
-        Log.i(TAG, "finished");
-    }
-
-    private void fetchPosts(){
         StringRequest request = new StringRequest(Request.Method.GET, ENDPOINT, onPostsLoaded, onPostsError);
 
         requestQueue.add(request);
+        Log.i(TAG, "finished");
     }
 
+
+    //Called when a valid response is detected
     private final Response.Listener<String> onPostsLoaded = new Response.Listener<String>() {
         @Override
         public void onResponse(String response) {
@@ -55,6 +54,7 @@ public class Location {
         }
     };
 
+    //Called when the response is an error
     private final Response.ErrorListener onPostsError = new Response.ErrorListener() {
         @Override
         public void onErrorResponse(VolleyError error) {
@@ -62,7 +62,7 @@ public class Location {
         }
     };
 
-
+    //Parses the response from a JSON object to a list of locations
     void getSteps(String Response){
         //this block gets an array of steps from the google response
         JsonParser parser = new JsonParser();
@@ -103,7 +103,7 @@ public class Location {
         putstepson(stepLocs);
     }
 
-
+    //Adds the left or right directions to the list of waypoints
     public void putstepson(ArrayList<stepItem> steplocs){
         String displayString = "";
         for(int i =0; i < steplocs.size()-1; i++) {
@@ -115,10 +115,13 @@ public class Location {
         }
         Log.i(TAG, displayString);
     }
+
+    //returns whether the next direction is a left or right
     public boolean goLeft(){
         return lastLocation().getleft();
     }
 
+    //returns whether the user is at a waypoint
     public boolean isAtLocation(android.location.Location location){
         if(navigator.navigate(location.getLatitude(), location.getLongitude(), nextLocation())){
             stepStep();
@@ -126,7 +129,7 @@ public class Location {
         }
         return false;
     }
-
+    //increments the active waypoint
     public void stepStep(){
         for(int i = 0; i < stepLocs.size()-1; i++){
             if(stepLocs.get(i).checkActive){
@@ -136,6 +139,8 @@ public class Location {
             }
         }
     }
+
+    //returns the previous waypoint
     public stepItem lastLocation(){
         stepItem tempItem = stepLocs.get(0);
         for(int i = 1; i < stepLocs.size(); i++){
@@ -148,6 +153,7 @@ public class Location {
         return tempItem;
     }
 
+    //returns the active waypoint
     public stepItem nextLocation(){
         stepItem tempItem = null;
         if(stepLocs != null){

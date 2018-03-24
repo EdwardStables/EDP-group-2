@@ -3,13 +3,14 @@ package ed.edpapp;
 /**
  * Created by Edward Stables on 12/03/2018.
  */
+//A class that contains all the information for each waypoint, and the get/set methods needed to access them
 
 public class stepItem {
-    public String LocationLat;
-    public String LocationLong;
-    public double heading;
-    public boolean left;
-    public boolean checkActive;
+    public String LocationLat;//waypoint latitude
+    public String LocationLong;//waypoint longitude
+    public double heading;//bearing to the next waypoint
+    public boolean left;//whether this waypoint requires a left or right turn
+    public boolean checkActive;//whether this is the active waypoint
 
     public stepItem(String LocationLat, String LocationLong){
         this.LocationLat = LocationLat;

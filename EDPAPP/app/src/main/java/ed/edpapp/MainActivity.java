@@ -60,27 +60,20 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     private BluetoothAdapter mBtAdaptor = null;
     private Button bluetoothBtn, buzzBtn;
     private ListView list;
-    private listItem chosenItem;
     ArrayList<listItem> loclist = new ArrayList<>();
     ArrayAdapter<String> adapter;
 
     TextView currentLocation;
     TextView nextLocation;
-    Button startBtn, buzzer;
     LocationManager locationManager;
-    String LAT;
-    String LNG;
-    String LOC;
     Location locationer = new Location();
-
-    boolean triedLeft = false;
-    boolean triedRight = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //The UI elements for the test app
         currentLocation = (TextView) findViewById(R.id.currentlocdisp);
         nextLocation = (TextView) findViewById(R.id.nextlocdisp);
         bluetoothBtn = (Button) findViewById(R.id.BluetoothButton);
@@ -90,16 +83,19 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getLocationNames());
         list.setAdapter(adapter);
 
+        //Gets the chosen item from the list of locations
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Start(i);
             }
         });
+        //initiates the location manager with GPS
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         }
+        //Button that displays a list of BLE devices
         bluetoothBtn.setOnClickListener(new View.OnClickListener(){
 
             @Override
@@ -114,15 +110,14 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                 }
             }
         });
-
+        //button to test the buzz feature
         buzzBtn.setOnClickListener(new View.OnClickListener(){
-
             @Override
             public void onClick(View view) {
                 buzz(true);
             }
         });
-
+        //Closes the app if the bluetooth hardware is not present
         if(mBtAdaptor == null){
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG);
             finish();
@@ -132,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         populateDestinations();
     }
 
+    //Sends the command to buzz either the left side or the right side
     public void buzz(boolean left){
         try{
             String command;
@@ -153,12 +149,14 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
     }
 
+    //adds the passed listItem to the displayed list of locations
     private void addlocation(listItem newItem){
         loclist.add(newItem);
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getLocationNames());
         list.setAdapter(adapter);
     }
 
+    //a small test list of locations
     private void populateDestinations(){
         listItem localoca = new listItem("Royal Albert Hall", "51.500523", "-0.177341");
         listItem localoca1 = new listItem("Imperial College London", "51.499332", "-0.174527");
@@ -170,6 +168,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
 
     }
 
+    //starts the UART service for the bluetooth communication
     private void service_init() {
         Intent bindIntent = new Intent(this, ed.edpapp.UartService.class);
         bindService(bindIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
@@ -177,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         LocalBroadcastManager.getInstance(this).registerReceiver(UARTStatusChangeReceiver, makeGattUpdateIntentFilter());
     }
 
+    //bluetooth configuration/setup
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder rawBinder) {
@@ -195,6 +195,8 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
     };
 
+    //onReceive will be called every time the system sees that something
+    //related to bluetooth has happened
     private final BroadcastReceiver UARTStatusChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -205,12 +207,6 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
                 runOnUiThread(new Runnable() {
                     public void run() {
                         Log.i(TAG, "UART_CONNECT_MSG");
-                        if(triedLeft){
-
-                        }
-                        if(triedRight){
-
-                        }
                         mState = UART_PROFILE_CONNECTED;
                     }
                 });
@@ -252,10 +248,11 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
            }
        }
    };
-
+    //code that would contain the setup for the compass mode discussed as a possible addition
     void compassmode(){
 
     }
+    //Following 5 methods are general configuration methods for the bluetooth connection
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(UartService.ACTION_GATT_CONNECTED);
@@ -299,7 +296,6 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
     private void showMessage(String s) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
-
     private Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg){
@@ -307,7 +303,8 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
     };
 
-
+    //onStart, onDestroy, onPause, onRestart, onStop, onResume, are the methods called when the app
+    //closes and opens
     public void onStart() {
         super.onStart();
     }
@@ -326,11 +323,6 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         mService = null;
     }
 
-
-
-    public void setNextLoc(String loc){
-        //nextLoc.setText(loc);
-    }
     public void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
@@ -351,6 +343,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         Log.d(TAG, "onResume");
     }
 
+    //returns all the names contained in loclist
     private String[] getLocationNames(){
         String[] locations = new String[loclist.size()];
         for(int i = 0; i<loclist.size(); i++){
@@ -359,6 +352,8 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
         return locations;
     }
+
+    //Starts the GPS service
     void Start(int i){
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationer.pollLocation(loclist.get(i).getLat(), loclist.get(i).getLong(), Double.toString(locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER).getLatitude()),
@@ -367,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         }
     }
 
-
+    //displayCurrent and displayNext show the current and next locations on the screen
     public void displayCurrent(android.location.Location location){
         currentLocation.setText(location.getLatitude() + ", " + location.getLongitude());
     }
@@ -375,8 +370,10 @@ public class MainActivity extends AppCompatActivity implements RadioGroup.OnChec
         nextLocation.setText(location.getLat() + ", " + location.getLong());
     }
 
+    //Callback methods which are called when certain GPS activities occur.
     LocationListener locationListener = new LocationListener() {
         @Override
+        //called upon a location change, calling appropriate behaviours
         public void onLocationChanged(android.location.Location location) {
             displayCurrent(location);
             if(locationer.isAtLocation(location)){

@@ -3,7 +3,7 @@ package ed.edpapp;
 /**
  * Created by Edward Stables on 12/03/2018.
  */
-
+//A simple class containing the destination locations and the required get methods
 public class listItem {
     public String Location;
     public String LocationLat;

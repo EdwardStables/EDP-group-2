@@ -3,6 +3,11 @@ package ed.edpapp;
 /**
  * Created by Edward Stables on 26/02/2018.
  */
+
+/*
+* An activity which displays all of the currently detected bluetooth devices
+*
+* */
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
